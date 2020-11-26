@@ -1,53 +1,35 @@
-import { useEffect, useState } from 'react'
-import Head from 'next/head'
+import { getAllPosts } from '../lib/contentfulPosts'
+import { getAllArticles } from '../lib/contentfulArticles'
+
+import Layout from '../components/layout'
+import MainHome from '../components/main-home'
 import Post from '../components/post'
+import Article from '../components/article'
+import homeStyles from '../styles/Home.module.css'
 
-const client = require('contentful').createClient({
-  space: process.env.NEXT_PUBLIC_CONTENTFUL_SPACE_ID,
-  accessToken: process.env.NEXT_PUBLIC_CONTENTFUL_ACCESS_TOKEN,
-})
-
-function HomePage() {
-  async function fetchEntries() {
-    const entries = await client.getEntries()
-    if (entries.items) return entries.items
-    console.log(`Error getting Entries for ${contentType.name}.`)
-  }
-
-  const [posts, setPosts] = useState([])
-
-  useEffect(() => {
-    async function getPosts() {
-      const allPosts = await fetchEntries()
-      setPosts([...allPosts])
-    }
-    getPosts()
-  }, [])
-
-  return (
-    <>
-      <Head>
-        <title>Next.js + Contentful</title>
-        <link
-          rel="stylesheet"
-          href="https://css.zeit.sh/v1.css"
-          type="text/css"
-        />
-      </Head>
-      {posts.length > 0
-        ? posts.map((p) => (
-            <Post
-              alt={p.fields.alt}
-              date={p.fields.date}
-              key={p.fields.title}
-              image={p.fields.image}
-              title={p.fields.title}
-              url={p.fields.url}
-            />
-          ))
-        : null}
-    </>
-  )
+export async function getStaticProps() {
+  const posts = await getAllPosts();
+  const articles = await getAllArticles();
+  return { props: { posts, articles } };
 }
 
-export default HomePage
+export default function HomePage({posts, articles}) {
+ 
+
+  return (
+    <Layout home>
+      <MainHome />
+      <section className={homeStyles.article__wrap}>
+        {articles?.map(({fields}) => {
+          return <Article key={fields.title} title={fields.title} slug={fields.slug} coverImage={fields.coverImage.fields.file.url} excerpt={fields.excerpt} textOnButton={fields.textOnButton} />
+        })}        
+      </section>  
+      <section className={homeStyles.news}>
+        <h2>News & Events</h2>
+        {posts?.map(({fields}) => {
+          return <Post key={fields.date} title={fields.title} excerpt={fields.excerpt} slug={fields.slug} coverImage={fields.coverImage.fields.file.url} textOnButton={fields.textOnButton} authorName={fields.author.fields.name} date={fields.date} />
+        })} 
+      </section>
+    </Layout>
+  )
+}
